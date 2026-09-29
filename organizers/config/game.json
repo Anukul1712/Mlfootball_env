@@ -1,0 +1,17 @@
+{
+  "field_width": 100.0,
+  "field_height": 140.0,
+  "goal_width": 36.0,
+  "player_radius": 3.0,
+  "player_speed": 4.0,
+  "ball_radius": 1.5,
+  "ball_speed": 8.0,
+  "possession_radius": 5.0,
+  "kick_distances": [32.0, 64.0, 96.0],
+  "obstacle_count": 6,
+  "obstacle_width": 11.0,
+  "obstacle_height": 8.0,
+  "maximum_iterations": 400,
+  "maximum_goals": 7,
+  "initial_possessor": "player_1"
+}

@@ -1,0 +1,2 @@
+# Add only dependencies explicitly approved by the event organizer.
+# The example bot uses only the Python standard library.

@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "archive": "C:\\Users\\anuku\\Mlfootball_env\\participants\\dist\\ai_soccer_submission_kit.zip",
+  "sha256": "648fa32635ed7762b134837b02f067fa31a0e952a33a8447fca574e545bfd2dc",
+  "team_name": "Replace With Your Team Name",
+  "command": [
+    "python",
+    "-m",
+    "team_bot.bot",
+    "--model",
+    "team_bot/models/example_policy.json"
+  ],
+  "compressed_bytes": 3500,
+  "uncompressed_bytes": 5861,
+  "file_count": 7,
+  "dependencies": [],
+  "model_files": [
+    "team_bot/models/example_policy.json"
+  ],
+  "errors": [],
+  "warnings": []
+}

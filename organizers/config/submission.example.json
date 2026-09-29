@@ -1,0 +1,5 @@
+{
+  "name": "Team Example",
+  "command": ["python", "-m", "agents.random_bot", "--seed", "77"],
+  "working_directory": ".."
+}

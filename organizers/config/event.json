@@ -1,0 +1,24 @@
+{
+  "event_name": "AI Soccer Arena Demo Event",
+  "game_config": "game.json",
+  "seeds": [101, 202, 303, 404],
+  "swap_sides": true,
+  "action_timeout_seconds": 2.0,
+  "show_each_iteration": false,
+  "presentation_delay_seconds": 0.08,
+  "event_countdown_seconds": 5,
+  "match_countdown_seconds": 3,
+  "goal_pause_seconds": 2.0,
+  "between_matches_seconds": 4.0,
+  "log_directory": "logs/event",
+  "competitors": [
+    {
+      "name": "Practice Bot",
+      "command": ["python", "-m", "agents.practice_bot"]
+    },
+    {
+      "name": "Random Bot",
+      "command": ["python", "-m", "agents.random_bot", "--seed", "22"]
+    }
+  ]
+}

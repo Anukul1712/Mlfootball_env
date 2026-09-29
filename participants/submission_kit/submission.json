@@ -1,0 +1,10 @@
+{
+  "name": "Replace With Your Team Name",
+  "command": [
+    "python",
+    "-m",
+    "team_bot.bot",
+    "--model",
+    "team_bot/models/example_policy.json"
+  ]
+}

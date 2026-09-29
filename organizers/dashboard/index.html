@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Soccer Tournament Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1 id="event-name">AI Soccer Arena</h1><p id="event-status">Starting event...</p></div>
+      <div class="header-actions"><button id="sound-toggle" type="button">🔇 Enable crowd sound</button><div id="progress-value">0 / 0</div></div>
+    </header>
+    <div class="progress" aria-label="Event progress"><div id="progress-bar"></div></div>
+
+    <section id="active-panel">
+      <div id="announcement">The arena is getting ready</div>
+      <div id="countdown" hidden></div>
+      <div id="active-match">Waiting for the first fixture.</div>
+      <div class="pitch-wrap">
+        <canvas id="tournament-field" aria-label="Live soccer field"></canvas>
+        <div id="pitch-placeholder">The live pitch appears when the match begins.</div>
+      </div>
+      <p id="commentary">Teams are preparing.</p>
+    </section>
+
+    <section>
+      <h2>Standings</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
+        <tbody id="standings"></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>Fixtures and results</h2>
+      <div id="fixtures"></div>
+    </section>
+    <p id="error" role="alert"></p>
+  </main>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "maximum_archive_mb": 100,
+  "maximum_uncompressed_mb": 250,
+  "maximum_single_file_mb": 150,
+  "maximum_files": 2000,
+  "maximum_compression_ratio": 200,
+  "required_files": ["submission.json", "README.md"],
+  "allowed_extensions": [
+    ".py", ".json", ".txt", ".md", ".toml", ".yaml", ".yml",
+    ".bin", ".onnx", ".pt", ".pth", ".pkl", ".joblib", ".npz", ".npy"
+  ],
+  "allowed_dependencies": [],
+  "forbidden_directories": [
+    ".git", ".venv", "venv", "env", "__pycache__", "node_modules", "logs", "tmp"
+  ],
+  "forbidden_filenames": [
+    ".env", "credentials.json", "secrets.json", "id_rsa", "id_ed25519"
+  ],
+  "forbidden_extensions": [
+    ".exe", ".dll", ".bat", ".cmd", ".ps1", ".com", ".msi", ".pem", ".key"
+  ]
+}

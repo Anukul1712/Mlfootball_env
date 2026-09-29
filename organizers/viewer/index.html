@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Soccer Arena Viewer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1>AI Soccer Arena</h1><p id="match-label">Loading match...</p></div>
+      <div id="score" aria-live="polite">0 - 0</div>
+    </header>
+    <section id="status-row" aria-live="polite">
+      <span id="iteration">Waiting for state</span><span id="ball-status"></span>
+    </section>
+    <canvas id="field" aria-label="Soccer field showing players, ball, goals, and obstacles"></canvas>
+    <section id="replay-controls" hidden>
+      <div class="buttons">
+        <button id="previous" type="button">Previous</button>
+        <button id="play" type="button">Play</button>
+        <button id="next" type="button">Next</button>
+        <button id="previous-event" type="button">Previous event</button>
+        <button id="next-event" type="button">Next event</button>
+        <label>Speed <select id="speed">
+          <option value="500">0.5 s</option><option value="200">0.2 s</option>
+          <option value="80" selected>0.08 s</option><option value="30">0.03 s</option>
+        </select></label>
+      </div>
+      <input id="timeline" type="range" min="0" max="1" value="0" aria-label="Replay frame">
+      <p id="frame-detail">Frame 0</p>
+      <div id="event-markers" aria-label="Important replay events"></div>
+    </section>
+    <section id="commentary-panel" aria-live="polite">
+      <h2>Match commentary</h2>
+      <p id="current-commentary">Waiting for the first action.</p>
+      <ol id="commentary-history"></ol>
+    </section>
+    <p id="message" role="status"></p>
+  </main>
+  <script src="/viewer.js"></script>
+</body>
+</html>
