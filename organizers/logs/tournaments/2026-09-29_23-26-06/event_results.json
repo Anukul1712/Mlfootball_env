@@ -1,0 +1,170 @@
+[
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 2,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 101,
+    "match_id": "1a8545ab4710",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_1a8545ab4710_seed_101.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 101,
+    "match_id": "80c1728d3388",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_80c1728d3388_seed_101.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 1,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 202,
+    "match_id": "4333b7250c76",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_4333b7250c76_seed_202.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 202,
+    "match_id": "92d4acdb01da",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_92d4acdb01da_seed_202.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 303,
+    "match_id": "79f38a49fe10",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_79f38a49fe10_seed_303.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 303,
+    "match_id": "6d4a9da34944",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_6d4a9da34944_seed_303.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 1,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 404,
+    "match_id": "001fb9423512",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_001fb9423512_seed_404.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 404,
+    "match_id": "abd6dc1d27a7",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\tournaments\\2026-09-29_23-26-06\\match_abd6dc1d27a7_seed_404.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  }
+]

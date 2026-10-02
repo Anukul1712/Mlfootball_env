@@ -22,6 +22,8 @@ class GameConfig:
     obstacle_height: float = 8.0
     maximum_iterations: int = 300
     maximum_goals: int = 5
+    possession_limit_iterations: int = 10
+    loose_ball_restart_iterations: int = 20
     initial_possessor: str = "player_1"
 
     @classmethod
@@ -52,6 +54,8 @@ class GameConfig:
             "obstacle_height": self.obstacle_height,
             "maximum_iterations": self.maximum_iterations,
             "maximum_goals": self.maximum_goals,
+            "possession_limit_iterations": self.possession_limit_iterations,
+            "loose_ball_restart_iterations": self.loose_ball_restart_iterations,
         }
         for name, value in positive.items():
             if value <= 0:

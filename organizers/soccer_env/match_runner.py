@@ -101,6 +101,8 @@ async def play_match(
     frame_callback: Callable[[dict[str, Any], dict[str, Any]], None] | None = None,
     iteration_delay_seconds: float = 0.0,
     goal_pause_seconds: float = 0.0,
+    iteration_gate: Callable[[], None] | None = None,
+    iteration_delay_provider: Callable[[float], float] | None = None,
 ) -> dict[str, Any]:
     env = SoccerEnv(game_config)
     observations = env.reset(seed)
@@ -134,6 +136,8 @@ async def play_match(
 
         try:
             while not env.done:
+                if iteration_gate:
+                    iteration_gate()
                 state_before = env.state()
                 requests = {
                     player_id: {
@@ -187,8 +191,13 @@ async def play_match(
                         )
                 if goal_pause_seconds > 0 and any(event["type"] == "goal" for event in info["events"]):
                     await asyncio.sleep(goal_pause_seconds)
-                if iteration_delay_seconds > 0:
-                    await asyncio.sleep(iteration_delay_seconds)
+                delay = (
+                    iteration_delay_provider(iteration_delay_seconds)
+                    if iteration_delay_provider
+                    else iteration_delay_seconds
+                )
+                if delay > 0:
+                    await asyncio.sleep(delay)
         finally:
             result = env.result()
             result["match_id"] = match_id

@@ -1,14 +1,3 @@
 **/__pycache__/
 *.py[cod]
 .pytest_cache/
-organizers/logs/
-organizers/tmp/
-organizers/config/generated_event.json
-organizers/incoming/*
-!organizers/incoming/.gitkeep
-organizers/submissions/*
-!organizers/submissions/.gitkeep
-organizers/submission_archives/
-organizers/reports/
-participants/models/
-participants/workspaces/

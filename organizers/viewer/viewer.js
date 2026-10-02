@@ -125,6 +125,10 @@ function describeEvents(events, state) {
     if (event.type === "interception") return `${event.player.replace("_", " ")} intercepts the moving ball.`;
     if (event.type === "bounce") return `The ball rebounds from the ${event.surface.replace("_", " ")}.`;
     if (event.type === "possession") return `${event.player.replace("_", " ")} takes possession.`;
+    if (event.type === "tackle") return `${event.player.replace("_", " ")} wins the ball with a tackle.`;
+    if (event.type === "possession_timeout") return `${event.player.replace("_", " ")} is forced to release the ball after holding it too long.`;
+    if (event.type === "player_contact") return "The players challenge shoulder-to-shoulder.";
+    if (event.type === "drop_ball") return "The referee restarts an unclaimed loose ball at midfield.";
     if (event.type === "restart") return `Kickoff restarts with ${event.possession.replace("_", " ")}.`;
     if (event.type === "player_collision") return "The players collide; both movements are cancelled.";
     if (event.type === "ball_stopped") return "The kick runs out of distance and the ball stops.";

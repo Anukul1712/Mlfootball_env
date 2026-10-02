@@ -27,7 +27,17 @@ You may rename `team_bot`, but update the module and model paths in `submission.
 5. Add only organizer-approved runtime packages to `requirements.txt`.
 6. Keep diagnostic output on standard error. Standard output must contain only one action JSON line for each observation.
 
-The supplied `bot.py` already handles argument parsing, JSON Lines input, match-end messages, JSON output, and flushing. Most teams only need to replace `choose_action` in `policy.py`.
+The supplied `bot.py` already handles argument parsing, JSON Lines input, match-end messages, JSON output, and flushing. `policy.py` can directly load the sparse format-3 model produced by `participants/train_bot.py`; unseen states use an obstacle-aware tactical fallback. You can replace this policy with your own implementation.
+
+The current protocol includes `possession_steps` and `loose_ball_steps` in the ball state. Holding possession for ten iterations forces a forward release. If neither player makes progress toward a stationary loose ball for twenty iterations, the referee moves it to midfield. Do not build a strategy around stalling.
+
+From the repository root, train a compatible RL model directly into a copied kit:
+
+```powershell
+python participants/train_bot.py --episodes 2400 --output participants/my_team/team_bot/models/trained_rl.json
+```
+
+Then change the `--model` value in your copied `submission.json` to `team_bot/models/trained_rl.json`.
 
 ## Test the folder before packaging
 

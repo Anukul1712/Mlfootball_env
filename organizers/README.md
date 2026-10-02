@@ -46,7 +46,7 @@ Run one command:
 python organizers/start_tournament.py
 ```
 
-The command finds all accepted teams, creates the round robin automatically, opens the live browser arena, runs every match, updates standings, and saves every result. Keep the terminal open. After the final result is saved, press `Ctrl+C` in the terminal to close the local dashboard server.
+The command finds all accepted teams, opens the live browser arena, and waits for you. In the browser you can inspect the opening bracket, choose the number of games per tie, then start, pause, resume, single-step, or change match speed. Bracket status and results update after every match. Keep the terminal open. After the final result is saved, press `Ctrl+C` in the terminal to close the local dashboard server.
 
 In the browser, click **Enable crowd sound** once. Browsers require this click before they allow sound. The live screen includes:
 
@@ -56,6 +56,7 @@ In the browser, click **Enable crowd sound** once. Browsers require this click b
 - a large goal announcement, a two-second goal pause, and a crowd cheer;
 - a result display and four-second buildup before the next match;
 - a final champion announcement.
+- organizer controls for games per bracket tie, start/pause/resume, next play, and live speed.
 
 ## Try the visual event before submissions arrive
 
@@ -65,6 +66,23 @@ Run the included bots through the same presentation:
 python organizers/start_tournament.py --demo
 ```
 
+The demo tournament contains four teams with balanced, tactical, high-press,
+and counter-attacking styles, so it exercises the complete Winners Bracket,
+Elimination Bracket, Grand Final, and possible reset final presentation.
+
+Balanced United RL uses a trained Q-learning model that learns movement,
+dribbling, kick direction, and kick power. Retrain it after changing the game
+physics with:
+
+```powershell
+python organizers/train_reinforcement_bot.py --episodes 2400
+```
+
+New possession is action-masked to forward control touches before shooting,
+and the evaluation policy falls back to the tactical baseline when its learned
+advantage is too uncertain. Every generated fixture receives its own recorded,
+reproducible seed—even across multi-game ties and tournaments with many teams.
+
 This is intentionally paced like an event. It is no longer the instant terminal demo. For a quick technical check with all pauses removed, use:
 
 ```powershell
@@ -73,14 +91,14 @@ python organizers/start_tournament.py --demo --fast
 
 ## How long will it take?
 
-The official defaults use four seeds and swap sides, producing eight matches for every pair of teams. Each match can run for up to 400 iterations. At the presentation speed of `0.08` seconds per iteration, a full length match takes about 32 seconds, plus countdowns and goal pauses.
+The official format is double elimination: the first series loss moves a team to the Elimination Bracket and the second eliminates it. The default is one game per tie. A tournament has `2 × teams - 2` series, or one additional series when the Grand Final resets. Each game can run for up to 400 iterations.
 
-| Teams | Pairings | Matches | Rough presentation time |
-|---:|---:|---:|---:|
-| 2 | 1 | 8 | 5-7 minutes |
-| 3 | 3 | 24 | 15-20 minutes |
-| 4 | 6 | 48 | 30-40 minutes |
-| 6 | 15 | 120 | 75-100 minutes |
+| Teams | Games (one per tie) | Rough presentation time |
+|---:|---:|---:|
+| 2 | 2-3 | 2-4 minutes |
+| 3 | 4-5 | 4-7 minutes |
+| 4 | 6-7 | 6-10 minutes |
+| 6 | 10-11 | 10-16 minutes |
 
 Matches can end early at seven total goals, so actual time varies. These values create buildup while keeping the event practical.
 
@@ -90,8 +108,9 @@ The simple presentation controls are in `organizers/config/tournament_settings.j
 
 ```json
 {
+  "format": "double_elimination",
+  "games_per_tie": 1,
   "seeds": [101, 202, 303, 404],
-  "swap_sides": true,
   "presentation_delay_seconds": 0.08,
   "event_countdown_seconds": 5,
   "match_countdown_seconds": 3,
@@ -100,7 +119,7 @@ The simple presentation controls are in `organizers/config/tournament_settings.j
 }
 ```
 
-Recommended fair values are already set. Keep all four seeds and `swap_sides: true`. If the show is too slow, change only `presentation_delay_seconds` to `0.05`. If it is too fast, use `0.12`. These timing values affect the presentation only; they do not change physics, bot observations, scores, or fairness.
+Recommended fair values are already set. Multi-game ties automatically alternate sides. If the show is too slow, change only `presentation_delay_seconds` to `0.05`. If it is too fast, use `0.12`. These timing values affect the presentation only; they do not change physics, bot observations, scores, or fairness.
 
 The official game rules and physics are in `organizers/config/game.json`. Do not change that file after participants start training.
 

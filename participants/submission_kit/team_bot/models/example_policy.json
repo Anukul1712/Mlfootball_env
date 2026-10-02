@@ -1,3 +1,5 @@
 {
+  "format": 0,
+  "strategy": "obstacle_aware_tactical_fallback",
   "kick_power": 3
 }

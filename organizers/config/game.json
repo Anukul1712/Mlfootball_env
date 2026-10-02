@@ -13,5 +13,7 @@
   "obstacle_height": 8.0,
   "maximum_iterations": 400,
   "maximum_goals": 7,
+  "possession_limit_iterations": 10,
+  "loose_ball_restart_iterations": 20,
   "initial_possessor": "player_1"
 }

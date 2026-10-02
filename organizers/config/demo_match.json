@@ -5,11 +5,11 @@
   "show_each_iteration": false,
   "log_directory": "logs",
   "player_1": {
-    "name": "Practice Bot A",
-    "command": ["python", "-m", "agents.practice_bot"]
+    "name": "Balanced United RL",
+    "command": ["python", "-m", "agents.reinforcement_bot"]
   },
   "player_2": {
-    "name": "Random Bot B",
-    "command": ["python", "-m", "agents.random_bot", "--seed", "22"]
+    "name": "Blitz Strikers",
+    "command": ["python", "-m", "agents.striker_bot"]
   }
 }

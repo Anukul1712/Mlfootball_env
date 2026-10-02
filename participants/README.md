@@ -10,7 +10,7 @@ For detailed training strategy, the full observation/action protocol, validation
 participants/
   README.md                              this quick start
   README_TRAINING_AND_SUBMISSION.md      complete participant guide
-  train_bot.py                           basic Q-learning example
+  train_bot.py                           full-action-space RL trainer
   package_submission.py                  creates a clean submission ZIP
   submission_kit/
     README.md                            kit-specific packaging instructions
@@ -71,7 +71,7 @@ Run a short smoke test:
 python participants/train_bot.py --episodes 100
 ```
 
-Run a longer training job:
+Run a longer training job and save the model directly into your copied submission:
 
 ```powershell
 python participants/train_bot.py `
@@ -79,7 +79,18 @@ python participants/train_bot.py `
   --output participants/my_team/team_bot/models/trained_policy.json
 ```
 
-The example alternates sides, changes the obstacle seed every episode, and trains against the official practice bot. It is intentionally small. You may use another learning framework in your private training environment, but the submitted inference dependencies must follow organizer policy.
+The trainer learns movement, dribbling, kick direction, and kick power. It alternates sides, uses a unique deterministic seed each episode, and rotates between tactical, aggressive, and counter-attacking opponents. The starter submission now loads this sparse format-3 model directly and falls back to an obstacle-aware tactical policy in unfamiliar states. You may use another learning framework privately, but submitted inference dependencies must follow organizer policy.
+
+Continue an existing training run with:
+
+```powershell
+python participants/train_bot.py `
+  --episodes 2000 `
+  --resume participants/my_team/team_bot/models/trained_policy.json `
+  --output participants/my_team/team_bot/models/trained_policy.json
+```
+
+The event is double elimination. A first series loss moves a team into the Elimination Bracket; a second eliminates it. Organizers may select multiple games per bracket tie, with aggregate goals deciding the series.
 
 ## Validate your process
 

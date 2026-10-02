@@ -61,6 +61,9 @@ class SoccerEnv:
         self.ball_velocity = (0.0, 0.0)
         self.ball_remaining_distance = 0.0
         self.possession: str | None = None
+        self.possession_steps = 0
+        self.loose_ball_steps = 0
+        self.loose_ball_best_distance: float | None = None
         self.last_touch: str | None = None
         self.score = {"player_1": 0, "player_2": 0}
         self.obstacles: list[Rectangle] = []
@@ -108,6 +111,8 @@ class SoccerEnv:
                 "width": self.config.field_width,
                 "height": self.config.field_height,
                 "goal_width": self.config.goal_width,
+                "player_radius": self.config.player_radius,
+                "player_speed": self.config.player_speed,
                 "player_1_own_goal": "bottom",
                 "player_2_own_goal": "top",
             },
@@ -124,6 +129,8 @@ class SoccerEnv:
                 "possession": self.possession,
                 "velocity": {"x": self.ball_velocity[0], "y": self.ball_velocity[1]},
                 "remaining_kick_distance": self.ball_remaining_distance,
+                "possession_steps": self.possession_steps,
+                "loose_ball_steps": self.loose_ball_steps,
             },
             "obstacles": [obstacle.to_dict() for obstacle in self.obstacles],
             "score": dict(self.score),
@@ -147,18 +154,30 @@ class SoccerEnv:
         self._move_players(actions)
 
         if self.possession:
+            self._resolve_tackle(actions)
+
+        if self.possession:
+            self.possession_steps += 1
             self.ball_position = self.players[self.possession]
             kick = actions[self.possession].get("kick")
             if kick:
                 self._start_kick(self.possession, kick)
+            elif self.possession_steps >= self.config.possession_limit_iterations:
+                player = self.possession
+                attack = "UP" if player == "player_1" else "DOWN"
+                self.events.append({"type": "possession_timeout", "player": player})
+                self._start_kick(player, {"direction": attack, "power": 1})
 
         scorer = self._move_ball() if self.possession is None else None
         if scorer:
+            self.loose_ball_steps = 0
+            self.loose_ball_best_distance = None
             self.score[scorer] += 1
             conceder = "player_2" if scorer == "player_1" else "player_1"
             self.events.append({"type": "goal", "scorer": scorer, "score": dict(self.score)})
         else:
             self._claim_stationary_ball()
+            self._restart_stalled_loose_ball()
 
         self.iteration += 1
         if sum(self.score.values()) >= self.config.maximum_goals:
@@ -223,6 +242,9 @@ class SoccerEnv:
     def _restart(self, possessor: str) -> None:
         self.players = self._starting_positions()
         self.possession = possessor
+        self.possession_steps = 0
+        self.loose_ball_steps = 0
+        self.loose_ball_best_distance = None
         self.ball_position = self.players[possessor]
         self.ball_velocity = (0.0, 0.0)
         self.ball_remaining_distance = 0.0
@@ -239,10 +261,119 @@ class SoccerEnv:
             )
             proposed[player] = candidate if self._valid_player_position(candidate) else old[player]
 
-        if _distance(proposed["player_1"], proposed["player_2"]) < 2 * self.config.player_radius:
-            proposed = old
-            self.events.append({"type": "player_collision", "resolution": "both_movements_cancelled"})
+        minimum_distance = 2 * self.config.player_radius
+        if _distance(proposed["player_1"], proposed["player_2"]) < minimum_distance:
+            # Resolve contact at the edge of both players instead of cancelling
+            # both moves. Cancelling created permanent head-to-head deadlocks.
+            midpoint = (
+                (proposed["player_1"][0] + proposed["player_2"][0]) / 2,
+                (proposed["player_1"][1] + proposed["player_2"][1]) / 2,
+            )
+            separation = _unit((
+                old["player_1"][0] - old["player_2"][0],
+                old["player_1"][1] - old["player_2"][1],
+            ))
+            if separation == (0.0, 0.0):
+                separation = (1.0, 0.0)
+            resolved = {
+                "player_1": (
+                    midpoint[0] + separation[0] * self.config.player_radius,
+                    midpoint[1] + separation[1] * self.config.player_radius,
+                ),
+                "player_2": (
+                    midpoint[0] - separation[0] * self.config.player_radius,
+                    midpoint[1] - separation[1] * self.config.player_radius,
+                ),
+            }
+            resolved_movement = sum(
+                _distance(old[player], resolved[player]) for player in PLAYERS
+            )
+            if (
+                resolved_movement > 0.1
+                and all(self._valid_player_position(point) for point in resolved.values())
+            ):
+                proposed = resolved
+                resolution = "players_separated"
+            else:
+                # Near walls/obstacles, moving both as a contact pair may be
+                # invalid. Let whichever legal solo move makes more progress
+                # toward the ball go first; this breaks obstacle-side jams.
+                solo_moves: list[tuple[float, str]] = []
+                for player in PLAYERS:
+                    other = "player_2" if player == "player_1" else "player_1"
+                    if (
+                        self._valid_player_position(proposed[player])
+                        and _distance(proposed[player], old[other]) >= minimum_distance
+                    ):
+                        progress = _distance(old[player], self.ball_position) - _distance(
+                            proposed[player], self.ball_position
+                        )
+                        solo_moves.append((progress, player))
+                if solo_moves:
+                    _, mover = max(solo_moves, key=lambda item: (item[0], item[1]))
+                    proposed = dict(old)
+                    proposed[mover] = candidate = (
+                        old[mover][0] + _unit(DIRECTIONS[actions[mover]["move"]])[0] * self.config.player_speed,
+                        old[mover][1] + _unit(DIRECTIONS[actions[mover]["move"]])[1] * self.config.player_speed,
+                    )
+                    if not self._valid_player_position(candidate):
+                        proposed = old
+                    resolution = f"{mover}_moved"
+                else:
+                    # A head-on contact can make both requested moves illegal.
+                    # Find the best legal one-player sidestep so the pair can
+                    # flow around each other instead of remaining locked.
+                    alternatives: list[tuple[float, str, tuple[float, float]]] = []
+                    for player in PLAYERS:
+                        other = "player_2" if player == "player_1" else "player_1"
+                        for direction_name, vector in DIRECTIONS.items():
+                            if direction_name == "STAY":
+                                continue
+                            direction = _unit(vector)
+                            candidate = (
+                                old[player][0] + direction[0] * self.config.player_speed,
+                                old[player][1] + direction[1] * self.config.player_speed,
+                            )
+                            if (
+                                self._valid_player_position(candidate)
+                                and _distance(candidate, old[other]) >= minimum_distance
+                            ):
+                                progress = _distance(old[player], self.ball_position) - _distance(
+                                    candidate, self.ball_position
+                                )
+                                alternatives.append((progress, player, candidate))
+                    if alternatives:
+                        _, mover, candidate = max(
+                            alternatives,
+                            key=lambda item: (item[0], item[1], item[2]),
+                        )
+                        proposed = dict(old)
+                        proposed[mover] = candidate
+                        resolution = f"{mover}_sidestepped"
+                    else:
+                        proposed = old
+                        resolution = "blocked"
+            self.events.append({"type": "player_contact", "resolution": resolution})
         self.players = proposed
+
+    def _resolve_tackle(self, actions: dict[str, dict[str, Any]]) -> None:
+        """Let an active challenger dispossess an idle/dribbling opponent on contact."""
+        owner = self.possession
+        # A newly won ball gets a brief protected dribble window. Without it,
+        # two players in contact can trade possession every simulation step.
+        if owner is None or self.possession_steps < 3 or actions[owner].get("kick"):
+            return
+        challenger = "player_2" if owner == "player_1" else "player_1"
+        contact_distance = 2 * self.config.player_radius + 0.15
+        if (
+            actions[challenger]["move"] != "STAY"
+            and _distance(self.players[owner], self.players[challenger]) <= contact_distance
+        ):
+            self.possession = challenger
+            self.possession_steps = 0
+            self.last_touch = challenger
+            self.ball_position = self.players[challenger]
+            self.events.append({"type": "tackle", "player": challenger, "from": owner})
 
     def _valid_player_position(self, position: tuple[float, float]) -> bool:
         radius = self.config.player_radius
@@ -261,6 +392,9 @@ class SoccerEnv:
         self.ball_velocity = (direction[0] * self.config.ball_speed, direction[1] * self.config.ball_speed)
         self.ball_remaining_distance = self.config.kick_distances[kick["power"] - 1]
         self.possession = None
+        self.possession_steps = 0
+        self.loose_ball_steps = 0
+        self.loose_ball_best_distance = None
         self.last_touch = player
         self.events.append({"type": "kick", "player": player, **kick})
 
@@ -296,6 +430,9 @@ class SoccerEnv:
             for player in PLAYERS:
                 if _distance(self.ball_position, self.players[player]) <= self.config.ball_radius + self.config.player_radius:
                     self.possession = player
+                    self.possession_steps = 0
+                    self.loose_ball_steps = 0
+                    self.loose_ball_best_distance = None
                     self.last_touch = player
                     self.ball_position = self.players[player]
                     self.ball_velocity = (0.0, 0.0)
@@ -377,9 +514,53 @@ class SoccerEnv:
         if candidates:
             _, winner = min(candidates, key=lambda item: (item[0], item[1]))
             self.possession = winner
+            self.possession_steps = 0
+            self.loose_ball_steps = 0
+            self.loose_ball_best_distance = None
             self.last_touch = winner
             self.ball_position = self.players[winner]
             self.events.append({"type": "possession", "player": winner})
+
+    def _restart_stalled_loose_ball(self) -> None:
+        if self.possession is not None or self.ball_remaining_distance > 0:
+            self.loose_ball_steps = 0
+            self.loose_ball_best_distance = None
+            return
+
+        closest_distance = min(
+            _distance(position, self.ball_position) for position in self.players.values()
+        )
+        # Count a stall only while the nearest player is failing to close on
+        # the ball. This permits long, legitimate chases across the field but
+        # detects obstacle/contact oscillations where positions keep changing
+        # without useful progress.
+        if (
+            self.loose_ball_best_distance is None
+            or closest_distance < self.loose_ball_best_distance - 0.25
+        ):
+            self.loose_ball_best_distance = closest_distance
+            self.loose_ball_steps = 0
+            return
+        self.loose_ball_steps += 1
+        if self.loose_ball_steps < self.config.loose_ball_restart_iterations:
+            return
+        previous = self.ball_position
+        self.ball_position = (self.config.field_width / 2, self.config.field_height / 2)
+        self.ball_velocity = (0.0, 0.0)
+        self.ball_remaining_distance = 0.0
+        self.possession = None
+        self.possession_steps = 0
+        self.loose_ball_steps = 0
+        self.loose_ball_best_distance = None
+        self.last_touch = None
+        self.events.append(
+            {
+                "type": "drop_ball",
+                "reason": "unclaimed_loose_ball",
+                "from": {"x": previous[0], "y": previous[1]},
+                "to": {"x": self.ball_position[0], "y": self.ball_position[1]},
+            }
+        )
 
     @staticmethod
     def _circle_hits_rectangle(

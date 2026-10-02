@@ -10,12 +10,14 @@ There are exactly two independently controlled players and one ball. Each iterat
 2. Both independently choose an action.
 3. Both player movements are applied simultaneously.
 4. The ball advances and resolves walls, obstacle rebounds, and player interceptions.
-5. Possession and goals are resolved.
-6. The new state is sent for the next iteration.
+5. Tackles, possession claims, goals, and anti-stall rules are resolved.
+6. The new state and any match events are recorded for the next iteration.
 
 Your bot controls one player. It does not modify the environment and never sees the opponent's action for the current iteration.
 
 Coordinates start at the bottom-left. Player 1 defends the bottom goal and attacks upward. Player 2 defends the top goal and attacks downward. The same physical state is sent to both bots with a player-specific identity and attack direction.
+
+The event uses double elimination. A first series loss moves a team from the Winners Bracket to the Elimination Bracket; a second series loss eliminates it. The organizer chooses one to six games per bracket tie. Multi-game ties alternate sides and use aggregate goals. An aggregate draw is resolved by a recorded, reproducible seeded penalty shootout. A Grand Final reset is played if the previously undefeated finalist loses the first final.
 
 ## 2. Official configuration
 
@@ -27,7 +29,9 @@ Final training and evaluation use `organizers/config/game.json`:
 - possession radius `5`;
 - kick distances `32`, `64`, and `96`;
 - six mirrored `11 x 8` obstacles;
-- at most `400` iterations and `7` total goals.
+- at most `400` iterations and `7` total goals;
+- forced ball release after `10` possession iterations;
+- midfield drop-ball after `20` iterations without meaningful progress toward a stationary loose ball.
 
 You may use easier configurations for early curriculum training, but restore the unmodified official file for final training and evaluation.
 
@@ -46,6 +50,7 @@ Your process receives a JSON object followed by a newline:
     "opponent_id": "player_2",
     "attack_direction": "UP",
     "state": {
+      "seed": 210196756,
       "iteration": 0,
       "maximum_iterations": 400,
       "players": {
@@ -58,7 +63,9 @@ Your process receives a JSON object followed by a newline:
         "status": "possessed",
         "possession": "player_1",
         "velocity": {"x": 0.0, "y": 0.0},
-        "remaining_kick_distance": 0.0
+        "remaining_kick_distance": 0.0,
+        "possession_steps": 0,
+        "loose_ball_steps": 0
       },
       "score": {"player_1": 0, "player_2": 0},
       "obstacles": []
@@ -68,7 +75,7 @@ Your process receives a JSON object followed by a newline:
 }
 ```
 
-The complete message also contains field dimensions, every obstacle rectangle, termination state, and legal moves, kick directions, and powers. Read allowed values from the observation rather than hard-coding assumptions when practical.
+The complete message also contains the deterministic match seed, field dimensions and player physics, every obstacle rectangle, termination state, and legal moves, kick directions, and powers. Read allowed values from the observation rather than hard-coding assumptions when practical.
 
 ## 4. Action format
 
@@ -92,7 +99,7 @@ When you possess the ball, you may include a kick:
 {"move":"UP","kick":{"direction":"UP_LEFT","power":3}}
 ```
 
-The kick is ignored when you do not possess the ball. Power is an integer listed in the observation. A moving ball remains independent until its distance is exhausted, it enters a goal, or a player intercepts it.
+The kick is ignored when you do not possess the ball. Power is an integer listed in the observation. A moving ball remains independent until its distance is exhausted, it enters a goal, or a player intercepts it. A newly won ball has a short protected control window before contact can become a tackle. Possession held too long is automatically released toward the attacking goal.
 
 Use standard output only for action JSON. Write diagnostic logs to standard error and flush the action line immediately. Invalid, late, missing, or malformed output becomes `STAY` and is recorded as an action error.
 
@@ -107,7 +114,7 @@ Copy `participants/submission_kit` to your own working folder. The important fil
 - `requirements.txt`: approved runtime packages only;
 - `README.md`: document your actual startup requirements.
 
-The starter bot chases the ball and kicks toward the opponent goal. It is a protocol example, not a competitive strategy.
+The starter bot predicts a moving ball, presses from the goal side, avoids immediate obstacle collisions, controls new possession, evades a nearby defender, and shoots toward goal. It can load the sparse format-3 RL model created by the included trainer, with the tactical behavior used as a safety fallback for unfamiliar states.
 
 ## 6. Train directly in the simulator
 
@@ -134,7 +141,7 @@ while not env.done:
 print(env.result())
 ```
 
-`info["events"]` reports kicks, bounces, interceptions, possession, goals, restarts, collisions, and stopped balls.
+`info["events"]` reports kicks, bounces, interceptions, possession, tackles, goals, restarts, possession timeouts, player contact, stopped balls, and midfield drop-balls.
 
 The included learner runs with:
 
@@ -142,7 +149,7 @@ The included learner runs with:
 python participants/train_bot.py --episodes 5000
 ```
 
-Its saved table is an educational baseline. Improve state representation, opponent variety, exploration, and the learning algorithm for a competitive entry.
+Its sparse format-3 model learns the full action space: movement plus kick direction and power. It trains against three opponent styles, masks unsafe opening actions, alternates sides, and uses a different seed per episode. Copy the output into `team_bot/models/` and reference it from `submission.json`. Continue a checkpoint with `--resume MODEL --output MODEL`.
 
 ## 7. Reward design
 
@@ -165,13 +172,13 @@ Watch for reward exploits such as deliberate rebounds, repeated possession trans
 3. Add official obstacles and rebounds.
 4. Train against the official practice and random bots.
 5. Alternate Player 1 and Player 2 every episode.
-6. Randomize seeds every episode.
+6. Use a different seed every episode and preserve separate unseen evaluation seeds.
 7. Add older snapshots of your own bot as opponents.
 8. Reserve unseen validation seeds.
 9. Track wins, draws, goals for/against, action errors, and decision time.
 10. Select the final model using unseen validation results.
 
-Because Player 1 starts with possession, performance must always be measured on both sides using the same seed set.
+Because Player 1 starts with possession, performance must always be measured on both sides. A single match seed is deterministic, but the official bracket assigns a distinct reproducible seed to every game, including every leg of a multi-game tie.
 
 ## 9. Process-level validation
 
@@ -195,7 +202,7 @@ Watch at least one match:
 python organizers/replay_viewer.py organizers/logs/validation/MATCH_FILE.jsonl
 ```
 
-Look for circling, getting stuck on obstacles, own goals, weak defense, repeated collisions, and failure to act correctly as Player 2.
+Look for circling, getting stuck on obstacles, own goals, weak defense, repeated contact, stationary possession, wasteful opening kicks, and failure to act correctly as Player 2. The referee drop-ball prevents a deadlock from consuming the rest of a match, but repeated drop-balls still indicate a poor policy.
 
 ## 10. Runtime dependencies
 
@@ -257,7 +264,7 @@ Do not include:
 
 Organizers statically inspect the original ZIP, record its hash, extract it into isolation, and validate it through the process protocol. Accepted bots are registered in the official event configuration.
 
-Each pairing plays multiple hidden seeds and both side assignments. Matches are deterministic and logged iteration by iteration. Standings award three points for a win and one for a draw, then rank by points, goal difference, goals scored, and alphabetical name unless the published rules specify another tie-break.
+Every bracket game receives a unique hidden seed and is deterministic when replayed with that seed, configuration, and action sequence. Multi-game ties alternate side assignments and are decided on aggregate goals. The first series loss moves the team into the Elimination Bracket and the second eliminates it; there is no league-points table. Aggregate ties use a deterministic seeded penalty shootout recorded in the event results.
 
 Your submitted source and model remain frozen after the deadline. Organizers should not modify them during the event.
 

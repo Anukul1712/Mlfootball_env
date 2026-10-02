@@ -10,7 +10,7 @@ This is the detailed operating procedure for preparing and conducting the compet
 4. Publish the participant protocol and development configuration from this repository.
 5. Publish a small set of development seeds. Keep evaluation seeds private.
 6. Record a Git commit or SHA-256 of the released configuration and engine.
-7. Confirm `swap_sides` remains `true` in the event configuration.
+7. Confirm the double-elimination format and games-per-tie setting in the event configuration.
 
 The same seed, starting state, configuration, and action sequence must always produce the same result. If an engine fix becomes necessary after release, version it explicitly and rerun every affected qualification match.
 
@@ -156,15 +156,9 @@ If the dashboard browser closes, reopen the localhost URL printed in the termina
 
 ## 9. Understand scoring and termination
 
-A match ends when it reaches `maximum_iterations` or the configured total-goal limit. Higher score wins; equal score is a draw.
+A match ends when it reaches `maximum_iterations` or the configured total-goal limit. A bracket tie is decided by aggregate goals across the configured games per tie. If aggregate goals are level, the recorded seeded penalty shootout decides the series.
 
-The event table awards:
-
-- three points for a win;
-- one point for a draw;
-- zero points for a loss.
-
-Ranking order is points, goal difference, goals scored, then alphabetical team name. If the competition publishes a different final tie-break, implement and test it before the event.
+The tournament uses double elimination. A first series loss moves a team from the Winners Bracket to the Elimination Bracket. A second series loss eliminates it. If the undefeated finalist loses the first Grand Final, a reset final decides the champion.
 
 ## 10. Review a dispute
 

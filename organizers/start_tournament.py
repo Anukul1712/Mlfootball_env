@@ -17,14 +17,16 @@ BASE_DIRECTORY = Path(__file__).resolve().parent
 
 def demo_competitors() -> list[dict[str, object]]:
     return [
-        {"name": "Practice Bot", "command": ["python", "-m", "agents.practice_bot"], "working_directory": str(BASE_DIRECTORY)},
-        {"name": "Random Bot", "command": ["python", "-m", "agents.random_bot", "--seed", "22"], "working_directory": str(BASE_DIRECTORY)},
+        {"name": "Balanced United RL", "command": ["python", "-m", "agents.reinforcement_bot"], "working_directory": str(BASE_DIRECTORY)},
+        {"name": "Tactical Rovers", "command": ["python", "-m", "agents.practice_bot"], "working_directory": str(BASE_DIRECTORY)},
+        {"name": "Blitz Strikers", "command": ["python", "-m", "agents.striker_bot"], "working_directory": str(BASE_DIRECTORY)},
+        {"name": "Counter City", "command": ["python", "-m", "agents.counter_bot"], "working_directory": str(BASE_DIRECTORY)},
     ]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Discover accepted teams and start the complete visual tournament")
-    parser.add_argument("--demo", action="store_true", help="Use the two included organizer bots")
+    parser.add_argument("--demo", action="store_true", help="Use the four included organizer bots")
     parser.add_argument("--fast", action="store_true", help="Disable presentation pauses for a technical dry run")
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--no-browser", action="store_true")
@@ -62,11 +64,11 @@ def main() -> None:
         print(f"  - {competitor['name']}")
     print(f"Tournament file: {generated_path}")
 
-    data = DashboardData()
+    data = DashboardData(rounds=int(settings.get("games_per_tie", 1)))
 
     def event_thread() -> None:
         try:
-            asyncio.run(run_event(generated_path, status_callback=data.update))
+            asyncio.run(run_event(generated_path, status_callback=data.update, control=data.control))
         except Exception as error:
             data.fail(error)
 

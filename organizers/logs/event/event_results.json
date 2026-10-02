@@ -1,0 +1,170 @@
+[
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 2,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 101,
+    "match_id": "15c32056aac9",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_15c32056aac9_seed_101.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 101,
+    "match_id": "c0607888a6b2",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_c0607888a6b2_seed_101.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 1,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 202,
+    "match_id": "88ce0920def4",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_88ce0920def4_seed_202.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 202,
+    "match_id": "153a2c6ac2b4",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_153a2c6ac2b4_seed_202.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 303,
+    "match_id": "8d1b2ff7ae21",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_8d1b2ff7ae21_seed_303.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 303,
+    "match_id": "be54c41265d1",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_be54c41265d1_seed_303.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": "player_1",
+    "draw": false,
+    "score": {
+      "player_1": 1,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 404,
+    "match_id": "1f492b0afa81",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_1f492b0afa81_seed_404.jsonl",
+    "competitors": {
+      "player_1": "Practice Bot",
+      "player_2": "Random Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  },
+  {
+    "winner": null,
+    "draw": true,
+    "score": {
+      "player_1": 0,
+      "player_2": 0
+    },
+    "iterations": 400,
+    "termination_reason": "maximum_iterations",
+    "seed": 404,
+    "match_id": "fd7dcce5139c",
+    "log_path": "C:\\Users\\anuku\\Mlfootball_env\\organizers\\logs\\event\\match_fd7dcce5139c_seed_404.jsonl",
+    "competitors": {
+      "player_1": "Random Bot",
+      "player_2": "Practice Bot"
+    },
+    "action_error_counts": {
+      "player_1": 0,
+      "player_2": 0
+    }
+  }
+]

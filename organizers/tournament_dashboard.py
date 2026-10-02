@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import threading
 from pathlib import Path
 
@@ -17,11 +18,12 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=0, help="Local port; zero chooses an available port")
     parser.add_argument("--no-browser", action="store_true", help="Print the URL without opening it")
     args = parser.parse_args()
-    data = DashboardData()
+    event_settings = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    data = DashboardData(rounds=int(event_settings.get("games_per_tie", 1)))
 
     def run_event_thread() -> None:
         try:
-            asyncio.run(run_event(Path(args.config), status_callback=data.update))
+            asyncio.run(run_event(Path(args.config), status_callback=data.update, control=data.control))
         except Exception as error:
             data.fail(error)
 

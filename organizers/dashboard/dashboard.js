@@ -12,12 +12,23 @@ const errorBox = document.getElementById("error");
 const canvas = document.getElementById("tournament-field");
 const placeholder = document.getElementById("pitch-placeholder");
 const soundToggle = document.getElementById("sound-toggle");
+const roundsSelect = document.getElementById("rounds");
+const speedSelect = document.getElementById("match-speed");
+const startButton = document.getElementById("start-event");
+const pauseButton = document.getElementById("pause-event");
+const stepButton = document.getElementById("step-event");
+const controlStatus = document.getElementById("control-status");
+const fixtureCard = document.getElementById("fixture-card");
+const fixtureHome = document.getElementById("fixture-home");
+const fixtureAway = document.getElementById("fixture-away");
+const fixtureCardMeta = document.getElementById("fixture-card-meta");
 const ctx = canvas.getContext("2d");
 
 let latestState = null;
 let soundEnabled = false;
 let audioContext = null;
 let lastGoalKey = "";
+let pendingRounds = null;
 
 function resizeCanvas() {
   const ratio = window.devicePixelRatio || 1;
@@ -85,6 +96,10 @@ function describeEvents(events, match) {
     if (event.type === "interception") return `${name} makes an interception.`;
     if (event.type === "bounce") return "The ball rebounds off an obstacle.";
     if (event.type === "possession") return `${name} takes possession.`;
+    if (event.type === "tackle") return `${name} wins the ball with a tackle.`;
+    if (event.type === "possession_timeout") return `${name} is forced to release the ball.`;
+    if (event.type === "player_contact") return "A shoulder-to-shoulder challenge!";
+    if (event.type === "drop_ball") return "The referee restarts the loose ball at midfield.";
     if (event.type === "player_collision") return "The players collide!";
     return event.type.replaceAll("_", " ");
   }).join(" ");
@@ -115,9 +130,55 @@ soundToggle.addEventListener("click", async () => {
   soundToggle.textContent = soundEnabled ? "🔊 Crowd sound on" : "🔇 Enable crowd sound";
 });
 
+async function sendControl(action, extra = {}) {
+  const response = await fetch("/api/control", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({action, ...extra}),
+  });
+  const value = await response.json();
+  if (!response.ok) throw new Error(value.error || "Control request failed");
+  return value.control;
+}
+
+startButton.addEventListener("click", async () => {
+  try {
+    await sendControl("configure", {rounds: Number(roundsSelect.value)});
+    await sendControl("start");
+  } catch (error) { controlStatus.textContent = String(error); }
+});
+roundsSelect.addEventListener("change", async () => {
+  pendingRounds = Number(roundsSelect.value);
+  controlStatus.textContent = "Updating fixture list...";
+  try {
+    await sendControl("configure", {rounds: pendingRounds});
+  } catch (error) {
+    controlStatus.textContent = String(error);
+  } finally {
+    pendingRounds = null;
+  }
+});
+pauseButton.addEventListener("click", async () => {
+  try {
+    const action = pauseButton.dataset.paused === "true" ? "play" : "pause";
+    await sendControl(action);
+  } catch (error) { controlStatus.textContent = String(error); }
+});
+stepButton.addEventListener("click", async () => {
+  try { await sendControl("step"); } catch (error) { controlStatus.textContent = String(error); }
+});
+speedSelect.addEventListener("change", async () => {
+  try { await sendControl("speed", {speed: Number(speedSelect.value)}); }
+  catch (error) { controlStatus.textContent = String(error); }
+});
+
 function render(data) {
   eventName.textContent = data.event_name;
-  eventStatus.textContent = data.status === "complete" ? "Event complete" : data.status === "failed" ? "Event failed" : "Event in progress";
+  eventStatus.textContent = data.status === "complete"
+    ? "Event complete"
+    : data.status === "failed"
+      ? "Event failed"
+      : data.status === "ready" ? "Ready — configure and start" : "Event in progress";
   progressValue.textContent = `${data.completed_matches} / ${data.total_matches}`;
   progressBar.style.width = `${data.total_matches ? 100 * data.completed_matches / data.total_matches : 0}%`;
   errorBox.textContent = data.error || "";
@@ -125,6 +186,19 @@ function render(data) {
   announcement.className = data.phase === "goal" ? "goal" : data.phase === "complete" ? "champion" : "";
   countdown.hidden = !data.countdown;
   countdown.textContent = data.countdown || "";
+  const control = data.control || {};
+  if (pendingRounds === null) roundsSelect.value = String(control.rounds || roundsSelect.value);
+  speedSelect.value = String(control.speed || speedSelect.value);
+  roundsSelect.disabled = Boolean(control.started);
+  startButton.disabled = Boolean(control.started);
+  startButton.textContent = control.started ? "Tournament started" : "Start tournament";
+  pauseButton.disabled = !control.started || data.status === "complete" || data.status === "failed";
+  stepButton.disabled = !control.started || !control.paused || data.status === "complete" || data.status === "failed";
+  pauseButton.dataset.paused = String(Boolean(control.paused));
+  pauseButton.textContent = control.paused ? "Resume" : "Pause";
+  controlStatus.textContent = !control.started
+    ? `${control.rounds || 1} game${control.rounds === 1 ? "" : "s"} per bracket tie — up to ${data.total_matches} matches.`
+    : control.paused ? "Paused. Use Next play to advance one simulation step." : `Running at ${control.speed}x speed.`;
 
   activeMatch.replaceChildren();
   if (data.active_match) {
@@ -132,10 +206,17 @@ function render(data) {
     const p1 = document.createElement("div"); p1.className = "team blue"; p1.textContent = match.player_1;
     const score = document.createElement("div"); score.className = "active-score"; score.textContent = match.score ? `${match.score.player_1} - ${match.score.player_2}` : "0 - 0";
     const p2 = document.createElement("div"); p2.className = "team orange"; p2.textContent = match.player_2;
-    const meta = document.createElement("div"); meta.className = "active-meta"; meta.textContent = `Match ${match.number} of ${data.total_matches} • Seed ${match.seed} • Iteration ${match.iteration}`;
+    const meta = document.createElement("div"); meta.className = "active-meta"; meta.textContent = `${match.round} | Match ${match.number} of up to ${data.total_matches} | Game ${match.series_game}/${match.series_games} | Seed ${match.seed} | Iteration ${match.iteration}`;
     activeMatch.append(p1, score, p2, meta);
   } else {
     activeMatch.textContent = data.status === "complete" ? "All fixtures completed." : "Preparing the next fixture.";
+  }
+  const showingFixture = ["fixture_preview", "match_countdown"].includes(data.phase) && data.active_match;
+  fixtureCard.hidden = !showingFixture;
+  if (showingFixture) {
+    fixtureHome.textContent = data.active_match.player_1;
+    fixtureAway.textContent = data.active_match.player_2;
+    fixtureCardMeta.textContent = `${data.active_match.round} | ${data.active_match.bracket} | Game ${data.active_match.series_game}/${data.active_match.series_games} | Seed ${data.active_match.seed}`;
   }
   if (data.active_state) {
     drawField(data.active_state);
@@ -154,7 +235,7 @@ function render(data) {
   standings.replaceChildren();
   data.standings.forEach((row, index) => {
     const tr = document.createElement("tr");
-    [index + 1, row.name, row.played, row.wins, row.draws, row.losses, row.gf, row.ga, row.goal_difference, row.points].forEach(value => {
+    [index + 1, row.name, row.bracket_status, row.bracket_losses, row.played, row.wins, row.draws, row.losses, row.gf, row.ga, row.goal_difference].forEach(value => {
       const td = document.createElement("td"); td.textContent = value; tr.appendChild(td);
     });
     standings.appendChild(tr);
@@ -165,7 +246,7 @@ function render(data) {
     const line = document.createElement("div"); line.className = "fixture-line";
     const teams = document.createElement("strong"); teams.textContent = `${match.player_1} vs ${match.player_2}`;
     const scoreText = document.createElement("span"); scoreText.textContent = match.score ? `${match.score.player_1}-${match.score.player_2}` : "-";
-    const meta = document.createElement("div"); meta.className = "fixture-meta"; meta.textContent = `#${match.number} • seed ${match.seed} • ${match.status}`;
+    const meta = document.createElement("div"); meta.className = "fixture-meta"; meta.textContent = `${match.round} | ${match.bracket} | game ${match.series_game}/${match.series_games} | #${match.number} | seed ${match.seed} | ${match.status}`;
     line.append(teams, scoreText); item.append(line, meta); fixtures.appendChild(item);
   }
 }
