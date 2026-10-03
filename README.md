@@ -1,4 +1,4 @@
-# AI Soccer Competition — Participant Development Kit
+# AI Soccer Competition - Participant Development Kit
 
 Welcome to the AI Soccer competition. This repository contains the complete participant kit needed to create, train, watch, test, validate, and package a football bot.
 
