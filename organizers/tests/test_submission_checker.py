@@ -51,6 +51,13 @@ class SubmissionCheckerTests(unittest.TestCase):
         self.assertFalse(report.passed)
         self.assertTrue(any("Unsafe archive path" in error for error in report.errors))
 
+    def test_windows_device_path_is_rejected(self) -> None:
+        files = self.valid_files()
+        files["team/CON.py"] = ""
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("Unsafe archive path" in error for error in report.errors))
+
     def test_unapproved_dependency_is_rejected(self) -> None:
         files = self.valid_files()
         files["requirements.txt"] = "requests==2.0\n"
@@ -64,6 +71,50 @@ class SubmissionCheckerTests(unittest.TestCase):
         report = check_archive(self.make_zip(files), POLICY)
         self.assertFalse(report.passed)
         self.assertTrue(any("Launch module" in error for error in report.errors))
+
+    def test_dangerous_python_import_is_rejected(self) -> None:
+        files = self.valid_files()
+        files["team/bot.py"] = "import socket\n"
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("Forbidden Python import" in error for error in report.errors))
+
+    def test_dynamic_execution_is_rejected(self) -> None:
+        files = self.valid_files()
+        files["team/bot.py"] = "exec('value = 1')\n"
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("Forbidden Python call" in error for error in report.errors))
+
+    def test_file_writing_is_rejected(self) -> None:
+        files = self.valid_files()
+        files["team/bot.py"] = "from pathlib import Path\nPath('outside').write_text('x')\n"
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("Forbidden Python call" in error for error in report.errors))
+
+    def test_unsafe_serialized_model_is_rejected(self) -> None:
+        files = self.valid_files()
+        files["team/model.pkl"] = "not really a pickle"
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("Forbidden executable or secret file type" in error for error in report.errors))
+
+    def test_working_directory_override_is_rejected(self) -> None:
+        files = self.valid_files()
+        descriptor = json.loads(files["submission.json"])
+        descriptor["working_directory"] = ".."
+        files["submission.json"] = json.dumps(descriptor)
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("working_directory" in error for error in report.errors))
+
+    def test_requirements_file_is_mandatory(self) -> None:
+        files = self.valid_files()
+        files.pop("requirements.txt")
+        report = check_archive(self.make_zip(files), POLICY)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("requirements.txt" in error for error in report.errors))
 
 
 if __name__ == "__main__":

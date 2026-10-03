@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "release_date": "2026-10-03",
+  "environment": "AI Soccer Arena official participant environment",
+  "python_minimum": "3.11",
+  "game_config": "config/game.json",
+  "organizer_rl_model": "organizer_rl_bot/models/balanced_united_rl.json",
+  "organizer_rl_sha256": "3b25bba9ce7b94b2ab1a2af898aff356bfd851c627474f9ab1426bbbf24054ee",
+  "notes": "This folder is standalone and uses only the Python standard library by default."
+}

@@ -1,0 +1,25 @@
+:root { color-scheme: dark; font-family: Inter,"Segoe UI",system-ui,sans-serif; background:#07150d; color:#f8fafc; }
+* { box-sizing:border-box; }
+body { margin:0; min-width:320px; background:radial-gradient(circle at top,#153d27 0,#07150d 62%); }
+main { width:min(760px,100%); margin:0 auto; padding:18px; }
+header,#status-row,.buttons { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+h1 { margin:0; font-size:1.35rem; font-weight:650; }
+p { margin:4px 0; color:#b7d8c2; }
+#score { font-size:clamp(1.7rem,6vw,2.5rem); font-weight:750; letter-spacing:.08em; }
+#status-row { margin:14px 0 10px; color:#d1fae5; font-variant-numeric:tabular-nums; }
+#field { display:block; width:100%; aspect-ratio:5/7; max-height:72vh; border-radius:10px; background:#19733f; box-shadow:0 16px 50px rgb(0 0 0 / 35%); }
+#replay-controls,#commentary-panel { margin-top:14px; padding:12px; border-radius:10px; background:rgb(15 42 27 / 88%); }
+h2 { margin:0 0 8px; font-size:1rem; font-weight:650; }
+button,select { min-height:38px; padding:7px 12px; border:1px solid #47755a; border-radius:7px; background:#183c28; color:#f8fafc; font:inherit; cursor:pointer; }
+button:hover,select:hover { background:#205237; }
+button:focus-visible,select:focus-visible,input:focus-visible { outline:3px solid #86efac; outline-offset:2px; }
+label { display:flex; align-items:center; gap:7px; color:#d1fae5; }
+#timeline { width:100%; margin-top:12px; accent-color:#86efac; }
+#frame-detail,#message { text-align:center; }
+#current-commentary { color:#f8fafc; font-weight:600; }
+#commentary-history { margin:8px 0 0; padding-left:24px; max-height:150px; overflow:auto; color:#b7d8c2; }
+#commentary-history li { margin:4px 0; }
+#event-markers { display:flex; gap:6px; overflow-x:auto; padding:5px 0 2px; }
+#event-markers button { min-height:30px; padding:4px 8px; white-space:nowrap; font-size:.82rem; }
+#message.error { color:#fca5a5; }
+@media (max-width:520px) { main { padding:10px; } #field { max-height:68vh; } .buttons { justify-content:center; } }

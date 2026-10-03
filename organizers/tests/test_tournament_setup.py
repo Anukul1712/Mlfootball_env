@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import tempfile
 import threading
@@ -21,6 +22,51 @@ from soccer_env.match_runner import Competitor
 
 
 class TournamentSetupTests(unittest.TestCase):
+    def test_participant_organizer_rl_model_matches_tournament_model(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+
+        def digest(path: Path) -> str:
+            value = hashlib.sha256()
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    value.update(chunk)
+            return value.hexdigest()
+
+        self.assertEqual(
+            digest(repository / "organizers" / "models" / "balanced_rl.json"),
+            digest(
+                repository
+                / "participants"
+                / "organizer_rl_bot"
+                / "models"
+                / "balanced_united_rl.json"
+            ),
+        )
+
+    def test_standalone_participant_environment_matches_official_sources(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+        mirrored_files = (
+            ("organizers/config/game.json", "participants/config/game.json"),
+            ("organizers/config/submission_policy.json", "participants/config/submission_policy.json"),
+            ("organizers/soccer_env/__init__.py", "participants/soccer_env/__init__.py"),
+            ("organizers/soccer_env/config.py", "participants/soccer_env/config.py"),
+            ("organizers/soccer_env/engine.py", "participants/soccer_env/engine.py"),
+            ("organizers/soccer_env/bots.py", "participants/soccer_env/bots.py"),
+            ("organizers/soccer_env/reinforcement.py", "participants/soccer_env/reinforcement.py"),
+            ("organizers/soccer_env/match_runner.py", "participants/soccer_env/match_runner.py"),
+            ("organizers/soccer_env/web_viewer.py", "participants/soccer_env/web_viewer.py"),
+            ("organizers/soccer_env/submission_checker.py", "participants/submission_checker.py"),
+            ("organizers/viewer/index.html", "participants/viewer/index.html"),
+            ("organizers/viewer/style.css", "participants/viewer/style.css"),
+            ("organizers/viewer/viewer.js", "participants/viewer/viewer.js"),
+        )
+        for official, participant in mirrored_files:
+            self.assertEqual(
+                (repository / official).read_bytes(),
+                (repository / participant).read_bytes(),
+                participant,
+            )
+
     def test_discovers_each_submission_folder(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

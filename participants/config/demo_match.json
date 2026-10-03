@@ -1,0 +1,16 @@
+{
+  "game_config": "game.json",
+  "seed": 101,
+  "action_timeout_seconds": 2.0,
+  "show_each_iteration": false,
+  "log_directory": "logs",
+  "player_1": {
+    "name": "Participant Starter Bot",
+    "command": ["python", "-m", "team_bot.bot", "--model", "team_bot/models/example_policy.json"],
+    "working_directory": "submission_kit"
+  },
+  "player_2": {
+    "name": "Balanced United RL Reference",
+    "command": ["python", "-m", "organizer_rl_bot.bot"]
+  }
+}

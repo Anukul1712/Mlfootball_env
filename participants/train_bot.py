@@ -3,27 +3,40 @@ from __future__ import annotations
 import argparse
 import math
 import random
-import sys
 from pathlib import Path
 
 
-ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
-ORGANIZER_DIRECTORY = ROOT_DIRECTORY / "organizers"
-sys.path.insert(0, str(ORGANIZER_DIRECTORY))
+BASE_DIRECTORY = Path(__file__).resolve().parent
 
 from soccer_env import GameConfig, SoccerEnv
-from soccer_env.bots import aggressive_action, counter_action, practice_action
+from soccer_env.bots import aggressive_action, counter_action
 from soccer_env.reinforcement import ReinforcementPolicy, reinforcement_reward
+from reference_bot.policy import choose_action as reference_action
+from organizer_rl_bot.policy import OrganizerRLOpponent
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train a full-action-space reinforcement-learning bot")
-    parser.add_argument("--game-config", default=str(ORGANIZER_DIRECTORY / "config" / "game.json"))
+    parser.add_argument("--game-config", default=str(BASE_DIRECTORY / "config" / "game.json"))
     parser.add_argument("--episodes", type=int, default=2400)
-    parser.add_argument("--output", default=str(Path(__file__).resolve().parent / "models" / "trained_rl.json"))
+    parser.add_argument("--output", default=str(BASE_DIRECTORY / "models" / "trained_rl.json"))
     parser.add_argument("--resume", help="Continue training an existing format-3 RL model")
     parser.add_argument("--seed", type=int, default=7301)
+    parser.add_argument(
+        "--opponents",
+        choices=("organizer-rl", "simple", "curriculum"),
+        default="curriculum",
+        help="Use Balanced United RL, the simple readable bot, or the full opponent curriculum",
+    )
+    parser.add_argument(
+        "--self-play-ratio",
+        type=float,
+        default=0.25,
+        help="Fraction of episodes that update the shared learner from both sides",
+    )
     args = parser.parse_args()
+    if not 0 <= args.self_play_ratio <= 1:
+        parser.error("--self-play-ratio must be between 0 and 1")
 
     source_config = GameConfig.from_json(args.game_config)
     training_values = source_config.to_dict()
@@ -39,7 +52,15 @@ def main() -> None:
     learner.model_seed = args.seed
     learner.evaluation_epsilon = 0.05
     learner.safety_margin = 0.6
-    opponents = [practice_action, aggressive_action, counter_action]
+    if args.opponents == "organizer-rl":
+        organizer_rl = OrganizerRLOpponent()
+        opponents = [organizer_rl.choose_action]
+    elif args.opponents == "simple":
+        organizer_rl = None
+        opponents = [reference_action]
+    else:
+        organizer_rl = OrganizerRLOpponent()
+        opponents = [organizer_rl.choose_action, reference_action, aggressive_action, counter_action]
     rng = random.Random(args.seed)
     totals = {"wins": 0, "draws": 0, "losses": 0}
 
@@ -51,27 +72,53 @@ def main() -> None:
         player_id = "player_1" if episode % 2 == 0 else "player_2"
         opponent_id = "player_2" if player_id == "player_1" else "player_1"
         opponent_policy = opponents[(episode // 2) % len(opponents)]
+        if organizer_rl is not None and getattr(opponent_policy, "__self__", None) is organizer_rl:
+            organizer_rl.start_episode()
         epsilon = max(0.035, 0.72 * math.exp(-4.2 * episode / max(1, args.episodes)))
+        self_play = rng.random() < args.self_play_ratio
 
         while not env.done:
-            current = observations[player_id]
             before = env.state()
-            action_index = learner.choose_index(current, epsilon)
-            learning_action = learner.action_from_index(current, action_index)
-            opponent_action = opponent_policy(observations[opponent_id])
-            if rng.random() < 0.025:
-                opponent_action = {"move": rng.choice(observations[opponent_id]["action_space"]["move"][1:])}
-            if player_id == "player_1":
-                observations, info = env.step(learning_action, opponent_action)
+            if self_play:
+                current_1, current_2 = observations["player_1"], observations["player_2"]
+                index_1 = learner.choose_index(current_1, epsilon)
+                index_2 = learner.choose_index(current_2, epsilon)
+                action_1 = learner.action_from_index(current_1, index_1)
+                action_2 = learner.action_from_index(current_2, index_2)
+                observations, info = env.step(action_1, action_2)
+                after = env.state()
+                learner.update(
+                    current_1,
+                    index_1,
+                    reinforcement_reward("player_1", before, after, info["events"], action_1),
+                    observations["player_1"],
+                    env.done,
+                )
+                learner.update(
+                    current_2,
+                    index_2,
+                    reinforcement_reward("player_2", before, after, info["events"], action_2),
+                    observations["player_2"],
+                    env.done,
+                )
             else:
-                observations, info = env.step(opponent_action, learning_action)
-            learner.update(
-                current,
-                action_index,
-                reinforcement_reward(player_id, before, env.state(), info["events"], learning_action),
-                observations[player_id],
-                env.done,
-            )
+                current = observations[player_id]
+                action_index = learner.choose_index(current, epsilon)
+                learning_action = learner.action_from_index(current, action_index)
+                opponent_action = opponent_policy(observations[opponent_id])
+                if rng.random() < 0.025:
+                    opponent_action = {"move": rng.choice(observations[opponent_id]["action_space"]["move"][1:])}
+                if player_id == "player_1":
+                    observations, info = env.step(learning_action, opponent_action)
+                else:
+                    observations, info = env.step(opponent_action, learning_action)
+                learner.update(
+                    current,
+                    action_index,
+                    reinforcement_reward(player_id, before, env.state(), info["events"], learning_action),
+                    observations[player_id],
+                    env.done,
+                )
 
         winner = env.result()["winner"]
         totals["draws" if winner is None else "wins" if winner == player_id else "losses"] += 1
@@ -79,7 +126,8 @@ def main() -> None:
         if (episode + 1) % interval == 0:
             print(
                 f"episode={episode + 1}/{args.episodes} states={len(learner.q_table)} "
-                f"epsilon={epsilon:.3f} W/D/L={totals['wins']}/{totals['draws']}/{totals['losses']}"
+                f"epsilon={epsilon:.3f} self_play={self_play} "
+                f"W/D/L={totals['wins']}/{totals['draws']}/{totals['losses']}"
             )
 
     learner.save(args.output)

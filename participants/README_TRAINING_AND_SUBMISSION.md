@@ -1,6 +1,6 @@
 # AI Soccer Arena - complete participant training and submission guide
 
-This guide explains how to build, train, test, package, and submit a bot. Start with `participants/README.md` for the short workflow.
+This guide explains how to build, train, test, package, and submit a bot. Start with `README.md` for the short workflow.
 
 ## 1. Competition model
 
@@ -21,7 +21,7 @@ The event uses double elimination. A first series loss moves a team from the Win
 
 ## 2. Official configuration
 
-Final training and evaluation use `organizers/config/game.json`:
+Final training and evaluation use the bundled `config/game.json`:
 
 - field `100 x 140`, goal width `36`;
 - player radius `3`, movement speed `4`;
@@ -105,7 +105,7 @@ Use standard output only for action JSON. Write diagnostic logs to standard erro
 
 ## 5. Use the starter kit
 
-Copy `participants/submission_kit` to your own working folder. The important files are:
+Copy `submission_kit` to your own working folder. The important files are:
 
 - `submission.json`: public team name and launch command;
 - `team_bot/bot.py`: protocol loop; usually leave it unchanged;
@@ -118,18 +118,12 @@ The starter bot predicts a moving ball, presses from the goal side, avoids immed
 
 ## 6. Train directly in the simulator
 
-Direct engine calls are much faster than starting bot processes. A custom training script outside `organizers/` can import the official engine like this:
+Direct engine calls are much faster than starting bot processes. From the standalone participant folder, import the bundled official engine like this:
 
 ```python
-from pathlib import Path
-import sys
-
-repository = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(repository / "organizers"))
-
 from soccer_env import GameConfig, SoccerEnv
 
-config = GameConfig.from_json(repository / "organizers" / "config" / "game.json")
+config = GameConfig.from_json("config/game.json")
 env = SoccerEnv(config)
 observations = env.reset(seed=1001)
 
@@ -146,10 +140,12 @@ print(env.result())
 The included learner runs with:
 
 ```powershell
-python participants/train_bot.py --episodes 5000
+python train_bot.py --episodes 5000
 ```
 
-Its sparse format-3 model learns the full action space: movement plus kick direction and power. It trains against three opponent styles, masks unsafe opening actions, alternates sides, and uses a different seed per episode. Copy the output into `team_bot/models/` and reference it from `submission.json`. Continue a checkpoint with `--resume MODEL --output MODEL`.
+Its sparse format-3 model learns the full action space: movement plus kick direction and power. The curriculum includes the actual trained Balanced United RL organizer bot, the readable simple baseline, and aggressive and counter-attacking styles. It masks unsafe opening actions, alternates sides, and uses a different seed per episode. Copy the output into `team_bot/models/` and reference it from `submission.json`. Continue a checkpoint with `--resume MODEL --output MODEL`.
+
+The actual organizer opponent lives in `organizer_rl_bot/`. Its 8 MB model is byte-for-byte identical to Balanced United RL's tournament model and uses the same inference class. Use `--opponents organizer-rl --self-play-ratio 0` to train only against it. The simpler source-readable baseline is in `reference_bot/policy.py` and is selected with `--opponents simple`. The default curriculum rotates all four supplied styles and spends 25% of episodes in shared-policy self-play. In self-play, both sides act from the same learner and both sides update it, so the model learns both attacking directions.
 
 ## 7. Reward design
 
@@ -170,10 +166,10 @@ Watch for reward exploits such as deliberate rebounds, repeated possession trans
 1. Learn movement and ball approach without obstacles.
 2. Learn possession and straight shots.
 3. Add official obstacles and rebounds.
-4. Train against the official practice and random bots.
+4. Benchmark against Balanced United RL, then rotate all supplied styles.
 5. Alternate Player 1 and Player 2 every episode.
 6. Use a different seed every episode and preserve separate unseen evaluation seeds.
-7. Add older snapshots of your own bot as opponents.
+7. Add shared-policy self-play and older frozen snapshots of your own bot as opponents.
 8. Reserve unseen validation seeds.
 9. Track wins, draws, goals for/against, action errors, and decision time.
 10. Select the final model using unseen validation results.
@@ -187,19 +183,19 @@ A direct policy can still fail when launched as a process because of imports, bu
 Run:
 
 ```powershell
-python organizers/validate_submission.py `
-  --submission participants/my_team/submission.json `
+python validate_submission.py `
+  --submission my_team/submission.json `
   --matches-per-side 2
 ```
 
 The descriptor's folder is used as the default working directory. Add `--working-directory PATH` only when your layout requires another directory.
 
-Fix every participant action error. Inspect JSONL files under `organizers/logs/validation/` to find the exact iteration, raw response, and error.
+Fix every participant action error. Inspect JSONL files under `logs/validation/` to find the exact iteration, raw response, and error.
 
 Watch at least one match:
 
 ```powershell
-python organizers/replay_viewer.py organizers/logs/validation/MATCH_FILE.jsonl
+python replay_viewer.py logs/validation/MATCH_FILE.jsonl
 ```
 
 Look for circling, getting stuck on obstacles, own goals, weak defense, repeated contact, stationary possession, wasteful opening kicks, and failure to act correctly as Player 2. The referee drop-ball prevents a deadlock from consuming the rest of a match, but repeated drop-balls still indicate a poor policy.
@@ -208,26 +204,30 @@ Look for circling, getting stuck on obstacles, own goals, weak defense, repeated
 
 Training dependencies do not need to be submitted when the final policy can run without them. Keep inference requirements minimal.
 
-The organizer's dependency allowlist is `organizers/config/submission_policy.json`. The default list is empty. A line in `requirements.txt` fails the ZIP checker unless the package name is approved.
+The dependency allowlist is bundled in `config/submission_policy.json`. The default list is empty. A line in `requirements.txt` fails the ZIP checker unless the package name is approved.
 
 Remote URLs, Git dependencies, editable installs, installer options, and local filesystem dependencies are rejected. Never include a virtual environment.
+
+The static safety gate also rejects dangerous imports and calls for networking, child processes, dynamic execution, unsafe deserialization, registry access, environment access, and filesystem mutation. Pickle, Joblib, `.pt`, and `.pth` files are rejected because loading them can execute code. `submission.json` cannot override its working directory. Python source must parse successfully and remain under the published size limit.
+
+At runtime, each response has a two-second deadline and an 8,192-byte maximum. The runner supplies a reduced environment, disables user-site packages, invokes commands without a shell, and records every action error. Passing static checks does not prove code is harmless, so the official event should also run under an offline dedicated operating-system account or isolated machine.
 
 ## 11. Package the submission
 
 Create the archive with the clean packager:
 
 ```powershell
-python participants/package_submission.py participants/my_team participants/dist/my-team.zip
+python package_submission.py my_team dist/my-team.zip
 ```
 
-The contents of `participants/my_team` become the ZIP root. The packager excludes common caches and generated directories.
+The contents of `my_team` become the ZIP root. The packager excludes common caches and generated directories.
 
 Inspect it:
 
 ```powershell
-python organizers/check_submission.py `
-  participants/dist/my-team.zip `
-  --report participants/dist/my-team-report.json
+python check_submission.py `
+  dist/my-team.zip `
+  --report dist/my-team-report.json
 ```
 
 The static checker does not extract or execute code. It verifies structure, sizes, paths, file types, required files, model references, launch command, dependencies, common secret files, and archive integrity. It records SHA-256.

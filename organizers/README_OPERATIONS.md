@@ -26,7 +26,7 @@ Before teams begin, publish:
 - whether compiled extensions or GPU use are allowed;
 - prohibition on network access and secrets;
 - ranking and tie-break rules;
-- how many hidden seeds and side-swapped matches are used;
+- games per bracket tie, unique hidden fixture seeds, aggregate scoring, and penalty tie-breaks;
 - dispute deadline and replay publication policy.
 
 Edit `organizers/config/submission_policy.json` to match those published rules. Its `allowed_dependencies` list is empty by default, meaning submitted inference code must use the standard library. Add exact approved package names before accepting entries if the event permits them.
@@ -52,9 +52,11 @@ The checker rejects:
 - configured size, count, and compression-ratio violations;
 - executable scripts and secret-bearing filenames prohibited by policy;
 - virtual environments, Git folders, caches, logs, and temporary directories;
-- missing root `submission.json` or `README.md`;
+- missing root `submission.json`, `README.md`, or `requirements.txt`;
 - missing Python launch modules, scripts, or `--model` files;
 - shell control characters in the launch command;
+- working-directory overrides, invalid Python syntax, dangerous imports/calls, and filesystem mutation;
+- executable serialization formats such as Pickle, Joblib, `.pt`, and `.pth`;
 - remote, local-path, editable, or unapproved dependencies.
 
 Static inspection never proves code is safe. The intake command uses a temporary validation area, but the participant process still needs operating-system or container isolation for a public event.
@@ -103,17 +105,17 @@ organizers/submissions/
 
 Team names in the descriptors must be unique because standings use names as identifiers. `start_tournament.py` stops with a clear error when fewer than two teams exist or when names collide.
 
-Use several seeds and keep side swapping enabled. Four seeds with side swapping create eight matches per pairing. For many competitors, estimate the total fixture count before event day:
+The event uses double elimination and automatically alternates sides in multi-game ties. For many competitors, estimate the fixture range before event day:
 
 ```text
-pairings = teams x (teams - 1) / 2
-matches = pairings x seeds x (2 when side swapping is enabled)
+minimum matches = (2 x teams - 2) x games per tie
+maximum matches = (2 x teams - 1) x games per tie  # reset final required
 ```
 
 ## 6. Conduct a dry run
 
 1. Confirm that the intended team folders are present in `organizers/submissions/`.
-2. Temporarily use one or two public seeds in `tournament_settings.json` if a shorter dry run is needed; restore the official list afterward.
+2. Temporarily select one game per tie and shorten presentation delays if a shorter dry run is needed; restore the official settings afterward.
 3. Run `python organizers/start_tournament.py --fast` for an unpaced technical dry run.
 4. Confirm every process starts and no action errors appear.
 5. Check the dashboard, final standings, and event result JSON.
