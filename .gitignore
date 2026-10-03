@@ -1,4 +1,11 @@
 **/__pycache__/
 *.py[cod]
 .pytest_cache/
-./organizers
+
+# The public repository/distribution is participant-facing. Organizer-only
+# tournament infrastructure remains local and is not committed.
+/organizers/
+
+# Generated participant training and match artifacts.
+/participants/logs/
+/participants/models/
