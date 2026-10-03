@@ -2,7 +2,7 @@
 
 Welcome to the AI Soccer competition. This repository contains the complete participant kit needed to create, train, watch, test, validate, and package a football bot.
 
-The participant kit is self-contained inside `participants/`. It does not require the private organizer folder.
+The participant kit is self-contained inside `participants/`.
 
 ## What is included
 
